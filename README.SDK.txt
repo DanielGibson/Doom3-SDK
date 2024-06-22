@@ -9,7 +9,7 @@ To build, invoke scons from the src/ directory
 use 'scons -h' for build configuration options
 scons 0.96 or newer is required for build
 
-We recommend using gcc 3.3. Note that you can specify the compiler by setting CC and CXX on the command line.
+Release 1.3.1 is compiled with gcc 4.0. Note that you can specify the compiler by setting CC and CXX on the command line. If you use a different gcc release line than 4.x, you may run into ABI issues.
 
 Links
 -----

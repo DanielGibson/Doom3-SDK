@@ -1096,7 +1096,7 @@ void idAI::Think( void ) {
 			}
 		}
 
-		// clear pain flag so that we receive any damage between now and the next time we run the script
+		// clear pain flag so that we recieve any damage between now and the next time we run the script
 		AI_PAIN = false;
 		AI_SPECIAL_DAMAGE = 0;
 		AI_PUSHED = false;
@@ -3210,7 +3210,7 @@ bool idAI::Pain( idEntity *inflictor, idEntity *attacker, int damage, const idVe
 		}
 	}
 
-	return AI_PAIN;
+	return ( AI_PAIN != 0 );
 }
 
 
@@ -3404,6 +3404,7 @@ void idAI::PlayCinematic( void ) {
 		}
 		current_cinematic = 0;
 		ActivateTargets( gameLocal.GetLocalPlayer() );
+		fl.neverDormant = false;
 		return;
 	}
 
@@ -3455,6 +3456,8 @@ void idAI::PlayCinematic( void ) {
 		head.GetEntity()->UpdateVisuals();
 		head.GetEntity()->Present();
 	}
+
+	fl.neverDormant = true;
 }
 
 /*

@@ -439,7 +439,7 @@ void idEntity::Spawn( void ) {
 	gameEdit->ParseSpawnArgsToRenderEntity( &spawnArgs, &renderEntity );
 
 	renderEntity.entityNum = entityNumber;
-	
+
 	// go dormant within 5 frames so that when the map starts most monsters are dormant
 	dormantStart = gameLocal.time - DELAY_DORMANT_TIME + gameLocal.msec * 5;
 
@@ -2960,7 +2960,13 @@ void idEntity::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		gameLocal.Error( "Unknown damageDef '%s'\n", damageDefName );
 	}
 
-	int	damage = damageDef->GetInt( "damage" );
+// sikk---> Ammo Management: Custom Ammo Damage
+	int	damage;
+	if ( g_ammoDamageType.GetBool() && damageDef->GetInt( "custom_damage" ) )
+		damage = damageDef->GetInt( "custom_damage" );
+	else
+		damage = damageDef->GetInt( "damage" );
+// <---sikk
 
 	// inform the attacker that they hit someone
 	attacker->DamageFeedback( this, inflictor, damage );

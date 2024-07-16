@@ -1,8 +1,7 @@
+// sikk---> Object Manipulation
 
 #ifndef __FORCE_GRAB_H__
 #define __FORCE_GRAB_H__
-
-#ifdef _D3XP
 
 /*
 ===============================================================================
@@ -31,7 +30,7 @@ public:
 
 
 public: // common force interface
-	virtual void		Evaluate( int time, bool grabber );	// sikk -  Use Function: Object Manipualtion - Added the grabber arg
+	virtual void		Evaluate( int time );
 	virtual void		RemovePhysics( const idPhysics *phys );
 
 	// Get the distance from object to goal position
@@ -50,5 +49,6 @@ private:
 	int					id;				// clip model id of physics object
 };
 
-#endif /* _D3XP */
 #endif /* !__FORCE_GRAB_H__ */
+
+// <---sikk

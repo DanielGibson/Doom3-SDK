@@ -1,8 +1,7 @@
+// sikk---> Object Manipulation
 
 #include "../../idlib/precompiled.h"
 #pragma hdrstop
-
-#ifdef _D3XP
 
 #include "../Game_local.h"
 
@@ -99,63 +98,45 @@ float idForce_Grab::GetDistanceToGoal( void ) {
 idForce_Grab::Evaluate
 ================
 */
-void idForce_Grab::Evaluate( int time, bool grabber ) {
-	if ( !physics ) {
+void idForce_Grab::Evaluate( int time ) {
+	if ( !physics )
 		return;
-	}
-	idVec3			forceDir, v, objectCenter;
-	float			forceAmt;
-	float			mass = physics->GetMass(id);
 
-	objectCenter = physics->GetAbsBounds(id).GetCenter();
+	idVec3	forceDir, v, objectCenter;
+	float	forceAmt;
+	float	mass = physics->GetMass( id );
 
-	if ( grabber && g_grabberRandomMotion.GetBool() && !gameLocal.isMultiplayer ) {	// sikk - Use Function: Object Manipualtion - Added "grabber" arg
-		// Jitter the objectCenter around so it doesn't remain stationary
-		float SinOffset = idMath::Sin( (float)(gameLocal.time)/66.f );
-		float randScale1 = gameLocal.random.RandomFloat();
-		float randScale2 = gameLocal.random.CRandomFloat();
-		objectCenter.x += ( SinOffset * 3.5f * randScale1 ) + ( randScale2 * 1.2f );
-		objectCenter.y += ( SinOffset * -3.5f * randScale1 ) + ( randScale2 * 1.4f );
-		objectCenter.z += ( SinOffset * 2.4f * randScale1 ) + ( randScale2 * 1.6f );
-	}
+	objectCenter = physics->GetAbsBounds( id ).GetCenter();
 
 	forceDir = goalPosition - objectCenter;
 	distanceToGoal = forceDir.Normalize();
 
 	float temp = distanceToGoal;
-	if ( temp > 12.f && temp < 32.f ) {
-		temp = 32.f;
+	if ( temp > 12.0f && temp < 32.0f ) {
+		temp = 32.0f;
 	}
-	forceAmt = (1000.f * mass) + (500.f * temp * mass);
+	forceAmt = ( 1000.0f * mass ) + ( 500.0f * temp * mass );
 
-	if ( forceAmt/mass > 120000.f ) {
-		forceAmt = 120000.f * mass;
+	if ( forceAmt / mass > 120000.0f ) {
+		forceAmt = 120000.0f * mass;
 	}
 	physics->AddForce( id, objectCenter, forceDir * forceAmt );
 
-// sikk---> Use Function: Object Manipualtion
-	if ( grabber ) {
-		if ( distanceToGoal < 196.f ) {
+	if ( distanceToGoal < 128.0f ) {
 		v = physics->GetLinearVelocity( id );
-		physics->SetLinearVelocity( v * damping, id );
-		}
-		if ( distanceToGoal < 16.f ) {
-			v = physics->GetAngularVelocity(id);
-			if ( v.LengthSqr() > Square(8) ) {
-				physics->SetAngularVelocity( v * 0.99999f, id );
-			}
-		}
-	} else {
-		if ( distanceToGoal < 128.0f ) {
-			v = physics->GetLinearVelocity( id );
-			if ( distanceToGoal <= 1.0f )
-				physics->SetLinearVelocity( vec3_origin, id );
-			else
-				physics->SetLinearVelocity( v * damping, id );
-		}
-		physics->SetAngularVelocity( vec3_origin, id );
+		if ( distanceToGoal <= 1.0f )
+			physics->SetLinearVelocity( vec3_origin, id );
+		else
+			physics->SetLinearVelocity( v * damping, id );
 	}
-// <---sikk
+
+	physics->SetAngularVelocity( vec3_origin, id );
+	//if ( distanceToGoal < 16.0f ) {
+	//	v = physics->GetAngularVelocity( id );
+	//	if ( v.LengthSqr() > Square( 8 ) ) {
+	//		physics->SetAngularVelocity( v * 0.99999f, id );
+	//	}
+	//}
 }
 
 /*
@@ -169,4 +150,4 @@ void idForce_Grab::RemovePhysics( const idPhysics *phys ) {
 	}
 }
 
-#endif	// _D3XP
+// <---sikk

@@ -345,6 +345,27 @@ public:
 
 	void					Tokenize( idStrList &out, const char *in );
 
+
+	idList<int>				currentLights;			// sikk - Soft Shadows PostProcess
+
+// sikk---> Explosion FX PostProcess
+	idVec3					explosionOrigin;
+	int						explosionRadius;
+	int						explosionDamage;
+	int						explosionTime;
+// <---sikk
+
+// sikk---> Random Encounters System
+	idList<int>				randomEnemyList;		// current list of eligible enemies
+	int						randomEnemyListNum;		// holds the size of the list for when loading a save game
+	int						randomEnemyTime;		// holds next spawn time
+	int						randomEnemyTally;		// holds number of random enemies that are active
+	int						GetEnemyNumFromName( idStr name );
+	idStr					GetEnemyNameFromNum( int num );
+	idStr					GetHellSkin( int num );
+	bool					SpawnRandomEnemy( void );
+// <---sikk
+
 	// ---------------------- Public idGame Interface -------------------
 
 							idGameLocal();
@@ -747,6 +768,7 @@ const int	CINEMATIC_SKIP_DELAY	= SEC2MS( 2.0f );
 
 #include "Entity.h"
 #include "GameEdit.h"
+#include "Grab.h"	// sikk - Object Manipulation
 #ifdef _D3XP
 #include "Grabber.h"
 #endif

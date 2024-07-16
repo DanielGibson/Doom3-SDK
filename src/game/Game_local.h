@@ -288,6 +288,34 @@ public:
 	idEntityPtr<idEntity>	lastGUIEnt;				// last entity with a GUI, used by Cmd_NextGUI_f
 	int						lastGUI;				// last GUI on the lastGUIEnt
 
+	idList<int>				currentLights;			// sikk - Soft Shadows PostProcess
+
+// sikk---> Explosion FX PostProcess
+	idVec3					explosionOrigin;
+	int						explosionRadius;
+	int						explosionDamage;
+	int						explosionTime;
+// <---sikk
+
+// sikk---> Random Encounters System
+	idList<int>				randomEnemyList;		// current list of eligible enemies
+	int						randomEnemyListNum;		// holds the size of the list for when loading a save game
+	int						randomEnemyTime;		// holds next spawn time
+	int						randomEnemyTally;		// holds number of random enemies that are active
+	int						GetEnemyNumFromName( idStr name );
+	idStr					GetEnemyNameFromNum( int num );
+	idStr					GetHellSkin( int num );
+	bool					SpawnRandomEnemy( void );
+// <---sikk
+
+// sikk---> Portal Sky Box
+	idEntityPtr<idEntity>	portalSkyEnt;
+	bool					portalSkyActive;
+	void					idGameLocal::SetPortalSkyEnt( idEntity *ent ) {	portalSkyEnt = ent; }
+	bool					idGameLocal::IsPortalSkyAcive( void ) { return portalSkyActive; }
+	pvsHandle_t				GetPlayerPVS( void ) { return playerPVS; };
+// <---sikk
+
 	// ---------------------- Public idGame Interface -------------------
 
 							idGameLocal();
@@ -668,6 +696,7 @@ const int	CINEMATIC_SKIP_DELAY	= SEC2MS( 2.0f );
 #include "physics/Force.h"
 #include "physics/Force_Constant.h"
 #include "physics/Force_Drag.h"
+#include "physics/Force_Grab.h"	// sikk - Object Manipulation
 #include "physics/Force_Field.h"
 #include "physics/Force_Spring.h"
 #include "physics/Physics.h"
@@ -682,9 +711,9 @@ const int	CINEMATIC_SKIP_DELAY	= SEC2MS( 2.0f );
 #include "physics/Physics_AF.h"
 
 #include "SmokeParticles.h"
-
 #include "Entity.h"
 #include "GameEdit.h"
+#include "Grab.h"	// sikk - Object Manipulation
 #include "AF.h"
 #include "IK.h"
 #include "AFEntity.h"

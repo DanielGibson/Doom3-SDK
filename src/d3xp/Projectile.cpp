@@ -242,6 +242,8 @@ void idProjectile::Create( idEntity *owner, const idVec3 &start, const idVec3 &d
 	}
 #endif
 
+	renderEntity.suppressSurfaceInViewID = -8;	// sikk - Depth Render
+
 	UpdateVisuals();
 
 	state = CREATED;
@@ -373,7 +375,7 @@ void idProjectile::Launch( const idVec3 &start, const idVec3 &dir, const idVec3 
 #endif
 
 	// don't do tracers on client, we don't know origin and direction
-	if ( spawnArgs.GetBool( "tracers" ) && gameLocal.random.RandomFloat() > 0.5f ) {
+	if ( spawnArgs.GetBool( "tracers" ) && gameLocal.random.RandomFloat() < g_tracerFrequency.GetFloat() ) {	// sikk - Tracer Frequency
 		SetModel( spawnArgs.GetString( "model_tracer" ) );
 		projectileFlags.isTracer = true;
 	}
@@ -599,6 +601,14 @@ bool idProjectile::Collide( const trace_t &collision, const idVec3 &velocity ) {
 				idPlayer *player = static_cast<idPlayer *>( owner.GetEntity() );
 				player->AddProjectileHits( 1 );
 				damageScale *= player->PowerUpModifier( PROJECTILE_DAMAGE );
+
+// sikk---> Blood Spray Screen Effect
+				if ( g_showBloodSpray.GetBool() && !player->PowerUpActive( HELLTIME ) ) {
+					idVec3 vLength = player->GetEyePosition() - ent->GetPhysics()->GetOrigin();
+					if ( vLength.Length() < g_bloodSprayDistance.GetFloat() && gameLocal.random.RandomFloat() < g_bloodSprayFrequency.GetFloat() )
+						player->playerView.AddBloodSpray( g_bloodSprayTime.GetFloat() );
+				}
+// <---sikk
 			}
 		}
 
@@ -878,6 +888,9 @@ void idProjectile::Explode( const trace_t &collision, idEntity *ignore ) {
 		renderEntity.shaderParms[SHADERPARM_ALPHA] = 1.0f;
 		renderEntity.shaderParms[SHADERPARM_TIMEOFFSET] = -MS2SEC( gameLocal.time );
 		renderEntity.shaderParms[SHADERPARM_DIVERSITY] = gameLocal.random.CRandomFloat();
+
+		renderEntity.suppressSurfaceInViewID = -8;	// sikk - Depth Render
+
 		Show();
 		removeTime = ( removeTime > 3000 ) ? removeTime : 3000;
 	}

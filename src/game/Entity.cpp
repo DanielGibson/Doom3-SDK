@@ -501,7 +501,15 @@ void idEntity::Spawn( void ) {
 		}
 	}
 
-	health = spawnArgs.GetInt( "health" );
+// sikk---> Doom/Custom Health Values
+	if ( g_enemyHealthType.GetInteger() == 1 && spawnArgs.GetInt( "health_doom" ) ) {
+		health = spawnArgs.GetInt( "health_doom" );
+	} else if ( g_enemyHealthType.GetInteger() == 2 && spawnArgs.GetInt( "health_custom" ) ) {
+		health = spawnArgs.GetInt( "health_custom" );
+	} else {
+		health = spawnArgs.GetInt( "health" );
+	}
+// <---sikk
 
 	InitDefaultPhysics( origin, axis );
 
@@ -838,7 +846,7 @@ bool idEntity::DoDormantTests( void ) {
 		return false;
 	}
 
-	return false;
+//	return false;	// sikk - warning C4702: unreachable code
 }
 
 /*
@@ -2520,7 +2528,7 @@ bool idEntity::RunPhysics( void ) {
 	endTime = gameLocal.time;
 
 	gameLocal.push.InitSavingPushedEntityPositions();
-	blockedPart = NULL;
+	blockedPart = blockingEntity = NULL;	// sikk - warning C4701: potentially uninitialized local variable used
 
 	// save the physics state of the whole team and disable the team for collision detection
 	for ( part = this; part != NULL; part = part->teamChain ) {
@@ -2960,12 +2968,15 @@ void idEntity::Damage( idEntity *inflictor, idEntity *attacker, const idVec3 &di
 		gameLocal.Error( "Unknown damageDef '%s'\n", damageDefName );
 	}
 
-// sikk---> Ammo Management: Custom Ammo Damage
+// sikk---> Damage Type
 	int	damage;
-	if ( g_ammoDamageType.GetBool() && damageDef->GetInt( "custom_damage" ) )
-		damage = damageDef->GetInt( "custom_damage" );
-	else
+	if ( g_damageType.GetInteger() == 1 && damageDef->GetInt( "damage_doom_scale" ) ) {
+		damage = damageDef->GetInt( "damage_doom_scale" ) * ( gameLocal.random.RandomInt( 255 ) % damageDef->GetInt( "damage_doom_range" ) + 1 );
+	} else if ( g_damageType.GetInteger() == 2 && damageDef->GetInt( "damage_custom" ) ) {
+		damage = damageDef->GetInt( "damage_custom" );
+	} else {
 		damage = damageDef->GetInt( "damage" );
+	}
 // <---sikk
 
 	// inform the attacker that they hit someone
@@ -4825,7 +4836,7 @@ bool idEntity::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
 			return false;
 		}
 	}
-	return false;
+//	return false;	// sikk - warning C4702: unreachable code
 }
 
 /*
@@ -5268,7 +5279,7 @@ bool idAnimatedEntity::ClientReceiveEvent( int event, int time, const idBitMsg &
 			return idEntity::ClientReceiveEvent( event, time, msg );
 		}
 	}
-	return false;
+//	return false;	// sikk - warning C4702: unreachable code
 }
 
 /*

@@ -48,7 +48,6 @@ idItem::idItem() {
 	canPickUp = true;
 	fl.networkSync = true;
 
-	removeable = true;	// sikk - Item Management: Random Item Removal
 	noPickup = false;	// sikk - Item Management: Manual Item Pickup
 }
 
@@ -82,8 +81,6 @@ void idItem::Save( idSaveGame *savefile ) const {
 	savefile->WriteInt( inViewTime );
 	savefile->WriteInt( lastCycle );
 	savefile->WriteInt( lastRenderViewTime );
-
-	savefile->WriteBool( removeable );	// sikk - Item Management: Random Item Removal
 }
 
 /*
@@ -104,8 +101,6 @@ void idItem::Restore( idRestoreGame *savefile ) {
 	savefile->ReadInt( inViewTime );
 	savefile->ReadInt( lastCycle );
 	savefile->ReadInt( lastRenderViewTime );
-
-	savefile->ReadBool( removeable );	// sikk - Item Management: Random Item Removal
 
 	itemShellHandle = -1;
 }
@@ -341,14 +336,6 @@ void idItem::Spawn( void ) {
 		if ( spawnArgs.GetInt( "inv_air" ) )
 			spawnArgs.SetInt( "inv_air", GetRandomValue( "inv_air" ) );
 	}
-
-// sikk---> Item Management: Random Item Removal
-	if ( g_itemRemovalFactor.GetFloat() && ( spawnArgs.GetBool( "removeable", "0" ) && removeable ) ) {
-		if ( ( gameLocal.random.RandomFloat() <= g_itemRemovalFactor.GetFloat() ) && spawnArgs.GetString( "target" ) == "" )
-			PostEventMS( &EV_Remove, 0 );
-		else
-			removeable = false;
-	}
 // <---sikk
 }
 
@@ -493,7 +480,6 @@ idItem::ClientReceiveEvent
 ================
 */
 bool idItem::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
-
 	switch( event ) {
 		case EVENT_PICKUP: {
 
@@ -522,7 +508,7 @@ bool idItem::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
 			return idEntity::ClientReceiveEvent( event, time, msg );
 		}
 	}
-	return false;
+//	return false;	// sikk - warning C4702: unreachable code
 }
 
 /*
@@ -937,6 +923,8 @@ idMoveableItem::idMoveableItem() {
 	trigger = NULL;
 	smoke = NULL;
 	smokeTime = 0;
+
+	nextSoundTime = 0;	// sikk - Moveable Items Collision Sound
 }
 
 /*
@@ -962,6 +950,8 @@ void idMoveableItem::Save( idSaveGame *savefile ) const {
 
 	savefile->WriteParticle( smoke );
 	savefile->WriteInt( smokeTime );
+
+	savefile->WriteInt( nextSoundTime );	// sikk - Moveable Items Collision Sound
 }
 
 /*
@@ -977,6 +967,8 @@ void idMoveableItem::Restore( idRestoreGame *savefile ) {
 
 	savefile->ReadParticle( smoke );
 	savefile->ReadInt( smokeTime );
+
+	savefile->ReadInt( nextSoundTime );	// sikk - Moveable Items Collision Sound
 }
 
 /*
@@ -991,7 +983,7 @@ void idMoveableItem::Spawn( void ) {
 	idBounds bounds;
 
 	// create a trigger for item pickup
-	spawnArgs.GetFloat( "triggersize", "32.0", tsize );		// sikk - Changed default trigger size from 16 to 32
+	spawnArgs.GetFloat( "triggersize", "24.0", tsize );	// sikk - Increased default triggersize from 16 to 24
 	trigger = new idClipModel( idTraceModel( idBounds( vec3_origin ).Expand( tsize ) ) );
 	trigger->Link( gameLocal.clip, this, 0, GetPhysics()->GetOrigin(), GetPhysics()->GetAxis() );
 	trigger->SetContents( CONTENTS_TRIGGER );
@@ -1023,7 +1015,7 @@ void idMoveableItem::Spawn( void ) {
 
 // sikk---> Temp Fix for moveable items that spawn inside geometry
 	idVec3 offset = idVec3( 0.0f, 0.0f, 0.0f );
-	if ( spawnArgs.GetString( "bind" ) == "" )
+	if ( !idStr::Icmp( spawnArgs.GetString( "bind" ), "" ) )
 		offset = idVec3( 0.0f, 0.0f, 4.0f );
 // <---sikk
 
@@ -1045,46 +1037,15 @@ void idMoveableItem::Spawn( void ) {
 
 	smoke = NULL;
 	smokeTime = 0;
+
+	nextSoundTime = 0;	// sikk - Moveable Items Collision Sound
+
 	const char *smokeName = spawnArgs.GetString( "smoke_trail" );
 	if ( *smokeName != '\0' ) {
 		smoke = static_cast<const idDeclParticle *>( declManager->FindType( DECL_PARTICLE, smokeName ) );
 		smokeTime = gameLocal.time;
 		BecomeActive( TH_UPDATEPARTICLES );
 	}
-
-// sikk---> Item Management: Helmet factor (replaces security armor)
-	bool bRemoved = false;
-	idStr defName = GetEntityDefName();
-	if ( !idStr::Icmp( defName, "item_armor_security" ) && ( g_itemHelmetFactor.GetFloat() && gameLocal.random.RandomFloat() <= g_itemHelmetFactor.GetFloat() ) ) {
-		idEntity *ent;
-		idDict args;
-
-		args.Set( "classname", "item_armor_helmet" );
-		args.Set( "name", GetName() );
-//		args.Copy( spawnArgs );
-		args.Set( "target", spawnArgs.GetString( "target" ) );
-		args.Set( "origin", spawnArgs.GetString( "origin" ) );
-		args.Set( "rotation", spawnArgs.GetString( "rotation" ) );
-		args.Set( "no_touch", spawnArgs.GetString( "no_touch" ) );
-		args.Set( "bind", spawnArgs.GetString( "bind" ) );
-		args.Set( "triggerFirst", spawnArgs.GetString( "triggerFirst" ) );
-		args.Set( "triggersize", spawnArgs.GetString( "triggersize" ) );
-
-//		PostEventMS( &EV_Remove, 0 );
-		delete this;
-		gameLocal.SpawnEntityDef( args, &ent );
-		bRemoved = true;
-	}
-// <---sikk
-
-// sikk---> Item Management: Random Item Removal
-	if ( g_itemRemovalFactor.GetFloat() && ( spawnArgs.GetBool( "removeable", "0" ) && removeable ) && !bRemoved ) {
-		if ( ( gameLocal.random.RandomFloat() < g_itemRemovalFactor.GetFloat() ) && ( spawnArgs.GetString( "target" ) == "" ) )
-			PostEventMS( &EV_Remove, 0 );
-		else
-			removeable = false;
-	}
-// <---sikk
 }
 
 /*
@@ -1110,6 +1071,30 @@ void idMoveableItem::Think( void ) {
 
 	Present();
 }
+
+// sikk---> Moveable Items Collision Sound
+/*
+=================
+idMoveableItem::Collide
+=================
+*/
+bool idMoveableItem::Collide( const trace_t &collision, const idVec3 &velocity ) {
+	float v, f;
+
+	v = -( velocity * collision.c.normal );
+	if ( v > 80 && gameLocal.time > nextSoundTime ) {
+		f = v > 200 ? 1.0f : idMath::Sqrt( v - 80 ) * 0.091f;
+		if ( StartSound( "snd_bounce", SND_CHANNEL_ANY, 0, false, NULL ) ) {
+			// don't set the volume unless there is a bounce sound as it overrides the entire channel
+			// which causes footsteps on ai's to not honor their shader parms
+			SetSoundVolume( f );
+		}
+		nextSoundTime = gameLocal.time + 500;
+	}
+
+	return false;
+}
+// <---sikk
 
 /*
 ================

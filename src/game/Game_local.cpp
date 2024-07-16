@@ -187,8 +187,8 @@ void idGameLocal::Clear( void ) {
 	lastAIAlertTime = 0;
 	spawnArgs.Clear();
 	gravity.Set( 0, 0, -1 );
-	playerPVS.h = -1;
-	playerConnectedAreas.h = -1;
+	playerPVS.h = 0;//-1;	// sikk - warning C4245: '=' : conversion from 'int' to 'unsigned int', signed/unsigned mismatch
+	playerConnectedAreas.h = 0;//-1;	// sikk - warning C4245: '=' : conversion from 'int' to 'unsigned int', signed/unsigned mismatch
 	gamestate = GAMESTATE_UNINITIALIZED;
 	skipCinematic = false;
 	influenceActive = false;
@@ -3079,6 +3079,29 @@ bool idGameLocal::SpawnEntityDef( const idDict &args, idEntity **ent, bool setDe
 
 	spawnArgs.GetString( "classname", NULL, &classname );
 
+// sikk---> Spectre Factor
+	if ( !idStr::Icmp( classname, "monster_demon_pinky" ) ) {
+		classname = ( ( random.RandomFloat() * 0.99999f ) < g_enemySpectreFactor.GetFloat() ) ? "monster_demon_spectre" : classname;
+	}
+// <---sikk
+// sikk---> Baron of Hell Factor
+	if ( !idStr::Icmp( classname, "monster_demon_hellknight" ) ) {
+		classname = ( ( random.RandomFloat() * 0.99999f ) < g_enemyBaronFactor.GetFloat() ) ? "monster_demon_baronofhell" : classname;
+	}
+// <---sikk
+// sikk---> Pain Elemental Factor
+	if ( !idStr::Icmp( classname, "monster_flying_cacodemon" ) ) {
+		classname = ( ( random.RandomFloat() * 0.99999f ) < g_enemyPainElementalFactor.GetFloat() ) ? "monster_flying_painelemental" : classname;
+	}
+// <---sikk
+
+// sikk---> Item Management: Helmet factor (replaces security armor)
+	if ( !idStr::Icmp( classname, "item_armor_security" ) ) {
+		classname = ( ( random.RandomFloat() * 0.99999f ) < g_itemHelmetFactor.GetFloat() ) ? "item_armor_helmet" : classname;
+	}
+// <---sikk
+
+
 	const idDeclEntityDef *def = FindEntityDef( classname, false );
 
 	if ( !def ) {
@@ -3176,15 +3199,15 @@ bool idGameLocal::InhibitEntitySpawn( idDict &spawnArgs ) {
 	}
 
 	const char *name;
+	name = spawnArgs.GetString( "classname" );
 #ifndef ID_DEMO_BUILD
 	if ( g_skill.GetInteger() == 3 || g_healthManagementType.GetInteger() == 2 ) {	// sikk - Health Management System (Health Regen) - inhibit medkits when using health regen
-		name = spawnArgs.GetString( "classname" );
 		if ( idStr::Icmp( name, "item_medkit" ) == 0 || idStr::Icmp( name, "item_medkit_small" ) == 0 ) {
 			result = true;
 
 // sikk---> Health Management System (Health Regen)
 			// if medkit has a target, replace it with an adrenaline - This should be done in Nightmare difficulty as well
-			if ( spawnArgs.GetString( "target" ) != "" ) {
+			if ( idStr::Icmp( spawnArgs.GetString( "target" ), "" ) ) {
 				idEntity *ent;
 				idDict args;
 				args.Set( "classname", "powerup_adrenaline" );
@@ -3199,8 +3222,14 @@ bool idGameLocal::InhibitEntitySpawn( idDict &spawnArgs ) {
 	}
 #endif
 
+// sikk---> Item Management: Random Item Removal
+	if ( spawnArgs.GetBool( "removeable" ) && !idStr::Icmp( spawnArgs.GetString( "target" ), "" ) &&
+		 ( gameLocal.random.RandomFloat() * 0.99999f ) < g_itemRemovalFactor.GetFloat() ) {
+		result = true;
+	}
+// <---sikk
+
 	if ( gameLocal.isMultiplayer ) {
-		name = spawnArgs.GetString( "classname" );
 		if ( idStr::Icmp( name, "weapon_bfg" ) == 0 || idStr::Icmp( name, "weapon_soulcube" ) == 0 ) {
 			result = true;
 		}
@@ -3673,6 +3702,13 @@ void idGameLocal::RadiusDamage( const idVec3 &origin, idEntity *inflictor, idEnt
 		if ( isMultiplayer && ent->entityNumber < MAX_CLIENTS && ent->IsType( idPlayer::Type ) && static_cast< idPlayer * >( ent )->health < 0 ) {
 			continue;
 		}
+
+// sikk---> Cyberdemon Damage Type
+		if ( !idStr::Icmp( ent->GetClassname(), "monster_boss_cyberdemon" ) && !static_cast< idActor * >( ent )->GetFinalBoss() ) {
+			continue;
+		}
+// <---sikk
+
 
 		// find the distance from the edge of the bounding box
 		for ( i = 0; i < 3; i++ ) {
@@ -4456,11 +4492,10 @@ bool idGameLocal::SpawnRandomEnemy()
 	if ( randomEnemyTally >= g_randomEncountersMaxSpawns.GetInteger() )
 		return false;
 
-	idStr mapscript = world->spawnArgs.GetString( "call" );
+	const char* map = GetLevelMap()->GetName();
 	// we don't want random spawns in first or last level
-	if ( mapscript == "map_hellhole::main" || mapscript == "map_marscity1::main" )
+	if ( !idStr::Icmp( map, "maps/game/marscity1" ) || !idStr::Icmp( map, "maps/game/hellhole" ) )
 		return false;
-
 
 	idAAS *pAAS48 = gameLocal.GetAAS( "aas48" );
 	idAAS *pAAS96 = gameLocal.GetAAS( "aas96" );
@@ -4471,7 +4506,7 @@ bool idGameLocal::SpawnRandomEnemy()
 		idDict args;
 		idVec3 origin;
 		idVec3 playerPos, enemyPos;
-		int playerAreaNum, enemyAreaNum;
+		int /*playerAreaNum = 0,*/ enemyAreaNum = 0;
 		aasPath_t aaspath;
 
 		float randFloat = gameLocal.random.RandomFloat();
@@ -4485,7 +4520,7 @@ bool idGameLocal::SpawnRandomEnemy()
 			return false;
 
 		// we only want demons or monster_zombie_boney in Hell
-		if ( mapscript == "map_hell1::main" && ( num > 1 && num < 31 ) ) 
+		if ( !idStr::Icmp( map, "maps/game/hell1" ) && ( num > 1 && num < 31 ) ) 
 			return false;
 
 		if ( num >= 39 && pAAS96 ) {
@@ -4532,7 +4567,7 @@ bool idGameLocal::SpawnRandomEnemy()
 		if ( num >= 31 )
 			args.Set( "teleport", "1" );
 		// use Hell skin if we're in Hell
-		if ( mapscript == "map_hell1::main" && ( num == 1 || num == 31 || num == 41 ) ) {
+		if ( !idStr::Icmp( map, "maps/game/hell1" ) && ( num == 1 || num == 31 || num == 40 ) ) {
 			args.Set( "skin", GetHellSkin( num ) );
 		}
 
@@ -4683,9 +4718,10 @@ idStr idGameLocal::GetHellSkin( int num )
 	switch ( num ) {
 		case 1:  name = "skins/monsters/zombies/adrianboney01"; break;
 		case 31: name = "skins/models/monsters/a_hellimp"; break;
-		case 41: name = "skins/models/monsters/a_hk_branded"; break;
+		case 40: name = "skins/models/monsters/a_hk_branded"; break;
 		default: name = ""; break;
 	}
 
 	return name;
-}// <---sikk
+}
+// <---sikk

@@ -180,6 +180,8 @@ public:
 	bool					AnimDone( int channel, int blendFrames ) const;
 	virtual void			SpawnGibs( const idVec3 &dir, const char *damageDefName );
 
+	bool					GetFinalBoss( void ) const { return finalBoss; };	// sikk - Cyberdemon Damage Type
+
 protected:
 	friend class			idAnimState;
 

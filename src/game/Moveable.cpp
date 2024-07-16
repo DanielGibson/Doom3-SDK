@@ -1155,7 +1155,6 @@ idExplodingBarrel::ClientReceiveEvent
 ================
 */
 bool idExplodingBarrel::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
-
 	switch( event ) {
 		case EVENT_EXPLODE: {
 			if ( gameLocal.realClientTime - msg.ReadLong() < spawnArgs.GetInt( "explode_lapse", "1000" ) ) {
@@ -1167,5 +1166,5 @@ bool idExplodingBarrel::ClientReceiveEvent( int event, int time, const idBitMsg 
 			return idBarrel::ClientReceiveEvent( event, time, msg );
 		}
 	}
-	return false;
+//	return false;	// sikk - warning C4702: unreachable code
 }

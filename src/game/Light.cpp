@@ -1120,7 +1120,6 @@ idLight::ClientReceiveEvent
 ================
 */
 bool idLight::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
-
 	switch( event ) {
 		case EVENT_BECOMEBROKEN: {
 			BecomeBroken( NULL );
@@ -1130,7 +1129,7 @@ bool idLight::ClientReceiveEvent( int event, int time, const idBitMsg &msg ) {
 			return idEntity::ClientReceiveEvent( event, time, msg );
 		}
 	}
-	return false;
+//	return false;	// sikk - warning C4702: unreachable code
 }
 
 // sikk---> Soft Shadows PostProcess
